@@ -22,11 +22,6 @@ st.markdown("""
         display: none !important;
     }
 
-    /* 4. Agar koi toolbar abhi bhi dikh raha hai */
-    div[data-testid="stToolbar"] {
-        display: none !important;
-    }
-
     /* 5. Pure page ko clean karne ke liye */
     #MainMenu {visibility: hidden;}
     header {visibility: hidden;}
