@@ -10,4 +10,4 @@ easyocr
 deepface
 tf-keras
 tensorflow-cpu
-youtube-search-python
+yt-dlp
