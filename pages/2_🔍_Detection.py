@@ -8,7 +8,7 @@ import av
 import pandas as pd
 
 # --- PAGE CONFIG ---
-st.set_page_config(page_title="A.I Object Detection", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="AI Object Detection", layout="wide", initial_sidebar_state="expanded")
 
 # --- PREMIUM DARK UI CSS ---
 st.markdown("""
@@ -24,7 +24,6 @@ st.markdown("""
 # --- LOAD ACCURATE MODEL ---
 @st.cache_resource
 def load_yolo():
-    # 'yolov8s.pt' is more accurate than 'yolov8n.pt'
     return YOLO('yolov8s.pt') 
 model = load_yolo()
 
@@ -44,10 +43,28 @@ with st.sidebar:
     st.markdown("## ⚙️ Accuracy Settings")
     st.divider()
     night_mode = st.toggle("🌙 Night Enhancement", value=True)
-    # High confidence default for 90% accuracy goal
-    conf_level = st.slider("Confidence (Accuracy)", 0.1, 1.0, 0.50, help="Higher = More Accurate but fewer detections")
+    conf_level = st.slider("Confidence (Accuracy)", 0.1, 1.0, 0.50)
     st.divider()
-    st.info("Model: YOLOv8 Small (High Accuracy Mode)")
+    st.info("Model: YOLOv8 Small")
+
+# --- BACK CAMERA FIX: CLASS BASED PROCESSOR ---
+class VideoProcessor:
+    def __init__(self, night, conf):
+        self.night = night
+        self.conf = conf
+
+    def recv(self, frame):
+        img = frame.to_ndarray(format="bgr24")
+        
+        # Wahi Night logic
+        if self.night:
+            img = cv2.convertScaleAbs(img, alpha=1.2, beta=20)
+        
+        # Wahi Detection logic
+        results = model.predict(img, conf=self.conf, iou=0.4, imgsz=320, verbose=False)
+        
+        # Annotated Frame return
+        return av.VideoFrame.from_ndarray(results[0].plot(), format="bgr24")
 
 # --- MAIN HEADER ---
 st.markdown("<div class='main-title'>🔍 A.I Object Detection</div>", unsafe_allow_html=True)
@@ -57,12 +74,10 @@ t1, t2, t3 = st.tabs(["📤 Upload Image", "📸 Take Snapshot", "🎥 Live Stre
 processed_img = None
 detected_boxes = []
 
-# --- DETECTION FUNCTION ---
+# --- TAB 1 & 2 (UPLOAD & SNAPSHOT) ---
 def get_prediction(img):
-    # iou=0.5 reduces double boxes, agnostic_nms removes class overlaps
     return model.predict(img, conf=conf_level, iou=0.5, imgsz=640, agnostic_nms=True, verbose=False)
 
-# --- TAB 1: UPLOAD ---
 with t1:
     up = st.file_uploader("Choose a photo", type=['jpg', 'png', 'jpeg'], label_visibility="collapsed")
     if up:
@@ -71,7 +86,6 @@ with t1:
         res = get_prediction(img_np)
         processed_img, detected_boxes = res[0].plot(), res[0].boxes
 
-# --- TAB 2: SNAPSHOT ---
 with t2:
     cam = st.camera_input("Snapshot")
     if cam:
@@ -80,25 +94,24 @@ with t2:
         res = get_prediction(img_np)
         processed_img, detected_boxes = res[0].plot(), res[0].boxes
 
-# --- TAB 3: LIVE STREAM ---
+# --- TAB 3 (LIVE STREAM - FIXED) ---
 with t3:
     st.markdown("<div class='card'>", unsafe_allow_html=True)
-    RTC_CONFIG = RTCConfiguration({"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]})
+    RTC_CONFIG = {"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}
     
-    def video_frame_callback(frame):
-        img = frame.to_ndarray(format="bgr24")
-        if night_mode:
-            img = cv2.convertScaleAbs(img, alpha=1.2, beta=20)
-        
-        # Balance speed and accuracy for live
-        results = model.predict(img, conf=conf_level, iou=0.4, imgsz=320, verbose=False)
-        return av.VideoFrame.from_ndarray(results[0].plot(), format="bgr24")
-
     webrtc_streamer(
         key="yolo_pro_stream", 
-        video_frame_callback=video_frame_callback, 
+        # Using the Radar style callback
+        video_frame_callback=VideoProcessor(night_mode, conf_level).recv, 
         rtc_configuration=RTC_CONFIG,
-        media_stream_constraints={"video": {"facingMode": "environment"}, "audio": False},
+        media_stream_constraints={
+            "video": {
+                "facingMode": "environment", # Back Camera Force
+                "width": {"ideal": 1280},
+                "height": {"ideal": 720}
+            }, 
+            "audio": False
+        },
         async_processing=True
     )
     st.markdown("</div>", unsafe_allow_html=True)
@@ -121,9 +134,7 @@ if processed_img is not None:
             items.append({"Object": label.capitalize(), "Accuracy": f"{round(acc*100,1)}%"})
         
         if items:
-            df = pd.DataFrame(items)
-            st.table(df)
-            st.success(f"Average Precision: {round(df['Object'].count(), 1)} items found")
+            st.table(pd.DataFrame(items))
         else:
-            st.warning("Low confidence detections hidden. Adjust slider for more results.")
+            st.warning("No items found.")
         st.markdown("</div>", unsafe_allow_html=True)
