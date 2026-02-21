@@ -3,23 +3,34 @@ import streamlit as st
 #  --- REMOVE WATERMARK CONFIG ---
 st.markdown("""
     <style>
-    /* Sab kuch hide karne ke liye optimized CSS */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-    
-    /* Ye specifically footer ke container ko target karta hai */
-    .stAppDeployButton {display:none !important;}
-    .st-emotion-cache-h5rgaw {display: none !important;}
-    .st-emotion-cache-zq5wmm {display: none !important;}
-    
-    /* Screen ke niche ka gap hatane ke liye */
-    footer:after {
-        content:'';
-        display:none !important;
+    /* 1. Header aur Fork on GitHub hatane ke liye */
+    header[data-testid="stHeader"] {
+        display: none !important;
+    }
+
+    /* 2. Profile Container (GitHub ID aur Status) hatane ke liye */
+    div[class*="profileContainer"] {
+        display: none !important;
+    }
+
+    /* 3. Niche ka 'Hosted with Streamlit' footer hatane ke liye */
+    footer {
+        display: none !important;
+    }
+
+    /* 4. Toolbar aur Main Menu hatane ke liye */
+    #MainMenu {
+        visibility: hidden;
+    }
+
+    /* 5. Pure page ka extra gap hatane ke liye */
+    .block-container {
+        padding-top: 0rem;
+        padding-bottom: 0rem;
     }
     </style>
     """, unsafe_allow_html=True)
+
 
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="A.I Vision", page_icon="👁️", layout="wide")
@@ -153,5 +164,6 @@ st.write("### 🏗️ Neural Pipeline Architecture")
 
 
 st.info("👈 **Sidebar open karein aur feature select karein.** Har module backend par Deep Learning models (Weights) use karta hai.")
+
 
 
