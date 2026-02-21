@@ -3,35 +3,40 @@ import streamlit as st
 #  --- REMOVE WATERMARK CONFIG ---
 st.markdown("""
     <style>
-    /* 1. Header aur Fork on GitHub hatane ke liye */
+    /* 1. Sidebar Button ko Wapis Lana aur Header ke baki buttons hatana */
     header[data-testid="stHeader"] {
+        background-color: rgba(0,0,0,0); /* Header transparent kar diya */
+    }
+    
+    /* Fork on GitHub aur Deploy button ko gayab karna par Sidebar ko chhod dena */
+    header[data-testid="stHeader"] [data-testid="stAppDeployButton"],
+    header[data-testid="stHeader"] .st-emotion-cache-12fmjuu,
+    header[data-testid="stHeader"] .st-emotion-cache-h5rgaw {
         display: none !important;
     }
 
-    /* 2. Profile Container (GitHub ID aur Status) hatane ke liye */
-    div[class*="profileContainer"] {
+    /* 2. Profile Container (GitHub ID) ko jadh se khatam karna */
+    div[class*="profileContainer"], 
+    div[data-testid="stStatusWidget"] {
         display: none !important;
     }
 
-    /* 3. Niche ka 'Hosted with Streamlit' footer hatane ke liye */
+    /* 3. Footer (Hosted with Streamlit) ko hide karna */
     footer {
         display: none !important;
     }
 
-    /* 4. Toolbar aur Main Menu hatane ke liye */
+    /* 4. Right side wala Main Menu (3 dots) hide karna */
     #MainMenu {
         visibility: hidden;
     }
 
-    /* 5. Pure page ka extra gap hatane ke liye */
-    .block-container {
-        padding-top: 0rem;
-        padding-bottom: 0rem;
+    /* 5. Sidebar ka footer (agar wahan kuch dikh raha ho) */
+    section[data-testid="stSidebar"] > div:nth-child(3) {
+        display: none !important;
     }
     </style>
     """, unsafe_allow_html=True)
-
-
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="A.I Vision", page_icon="👁️", layout="wide")
 
@@ -164,6 +169,7 @@ st.write("### 🏗️ Neural Pipeline Architecture")
 
 
 st.info("👈 **Sidebar open karein aur feature select karein.** Har module backend par Deep Learning models (Weights) use karta hai.")
+
 
 
 
