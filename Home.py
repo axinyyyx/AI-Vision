@@ -115,13 +115,13 @@ with col4:
 with col5:
     st.markdown("""
         <div class='feature-box'>
-            <h3>🎭 Persona DJ</h3>
+            <h3>AI Mood Based Music & Movie Recommendations</h3>
             <span class='logic-tag'>DeepFace + Sentiment Analysis</span>
             <p style='color: #aaa; margin-top: 10px; font-size: 14px;'>
                 <b>How it works:</b><br>
                 1. <b>Biometric Extraction:</b> Face landmarks se Age, Gender aur Mood predict karta hai.<br>
                 2. <b>Safe-Search Filter:</b> Age ke base par content restrictions (Kids/Adult) apply karta hai.<br>
-                3. <b>YT-DLP API:</b> Mood ke according real-time music recommendations load karta hai.
+                3. <b>YT-DLP API:</b> Mood ke according real-time music and movie recommendations load karta hai.
             </p>
         </div>
         """, unsafe_allow_html=True)
