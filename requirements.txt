@@ -5,4 +5,8 @@ ultralytics==8.4.14
 numpy==2.2.6
 av==16.1.0
 pillow==12.1.1
-mediapipe==0.10.32
+mediapipe
+easyocr
+deepface
+tf-keras
+tensorflow-cpu
