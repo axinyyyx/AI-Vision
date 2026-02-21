@@ -3,40 +3,38 @@ import streamlit as st
 #  --- REMOVE WATERMARK CONFIG ---
 st.markdown("""
     <style>
-    /* 1. Sidebar Button ko Wapis Lana aur Header ke baki buttons hatana */
-    header[data-testid="stHeader"] {
-        background-color: rgba(0,0,0,0); /* Header transparent kar diya */
-    }
-    
-    /* Fork on GitHub aur Deploy button ko gayab karna par Sidebar ko chhod dena */
-    header[data-testid="stHeader"] [data-testid="stAppDeployButton"],
-    header[data-testid="stHeader"] .st-emotion-cache-12fmjuu,
-    header[data-testid="stHeader"] .st-emotion-cache-h5rgaw {
+    /* 1. Upar wala Fork/GitHub Button hatane ke liye (Sidebar button ko bachate hue) */
+    [data-testid="stHeader"] .stAppDeployButton, 
+    [data-testid="stHeader"] a[href*="github.com"],
+    header svg[viewBox="0 0 24 24"] {
         display: none !important;
     }
 
-    /* 2. Profile Container (GitHub ID) ko jadh se khatam karna */
-    div[class*="profileContainer"], 
-    div[data-testid="stStatusWidget"] {
-        display: none !important;
-    }
-
-    /* 3. Footer (Hosted with Streamlit) ko hide karna */
+    /* 2. Niche wala "Hosted with Streamlit" aur "GitHub ID" hatane ke liye */
     footer {
         display: none !important;
     }
-
-    /* 4. Right side wala Main Menu (3 dots) hide karna */
-    #MainMenu {
-        visibility: hidden;
-    }
-
-    /* 5. Sidebar ka footer (agar wahan kuch dikh raha ho) */
-    section[data-testid="stSidebar"] > div:nth-child(3) {
+    
+    /* 3. Sabse niche wala profile/status container jo aapne bataya */
+    [data-testid="stStatusWidget"],
+    div[class*="profileContainer"],
+    div[class*="viewerBadge"] {
         display: none !important;
     }
+
+    /* 4. Agar koi toolbar abhi bhi dikh raha hai */
+    div[data-testid="stToolbar"] {
+        display: none !important;
+    }
+
+    /* 5. Pure page ko clean karne ke liye */
+    #MainMenu {visibility: hidden;}
+    header {visibility: hidden;}
     </style>
     """, unsafe_allow_html=True)
+
+
+
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="A.I Vision", page_icon="👁️", layout="wide")
 
@@ -169,6 +167,7 @@ st.write("### 🏗️ Neural Pipeline Architecture")
 
 
 st.info("👈 **Sidebar open karein aur feature select karein.** Har module backend par Deep Learning models (Weights) use karta hai.")
+
 
 
 
