@@ -2,51 +2,22 @@ import streamlit as st
 import cv2
 import numpy as np
 from ultralytics import YOLO
-from PIL import Image
+from PIL import Image, ImageEnhance
 from streamlit_webrtc import webrtc_streamer, RTCConfiguration
 import av
+import pandas as pd
 
 # --- PAGE CONFIG ---
-st.set_page_config(page_title="AI Vision Hub", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="AI Vision Hub Pro", layout="wide", initial_sidebar_state="expanded")
 
-# --- CLEAN UI CSS ---
+# --- PREMIUM DARK UI ---
 st.markdown("""
     <style>
-    .stApp { background-color: #121216; color: white; }
-    
-    /* Title Fix */
-    .main-title { 
-        font-size: 28px; 
-        font-weight: 700; 
-        margin-bottom: 20px; 
-        color: #00cc66; 
-        padding-top: 10px;
-    }
-
-    /* Zero Gap Buttons */
-    div.stButton > button {
-        width: 100%;
-        background-color: #1e1e26;
-        color: white;
-        border: 1px solid #333;
-        height: 48px;
-        border-radius: 5px;
-    }
-    
-    /* Card Design */
-    .card {
-        background-color: #1e1e26;
-        padding: 15px;
-        border-radius: 10px;
-        border: 1px solid #2a2a35;
-        margin-top: 10px;
-    }
-
-    /* Eliminate Vertical Gaps */
-    [data-testid="stVerticalBlock"] > div { gap: 0rem !important; }
-    
-    /* File Uploader styling to look clean */
-    .uploadedFile { display: none; }
+    .stApp { background-color: #0b0d11; color: #e0e0e0; }
+    section[data-testid="stSidebar"] { background-color: #161a21 !important; border-right: 1px solid #00cc66; }
+    .main-title { font-size: 30px; font-weight: 800; color: #00cc66; margin-bottom: 20px; }
+    .card { background-color: #1c2128; padding: 20px; border-radius: 15px; border: 1px solid #2d333b; margin-bottom: 20px; }
+    div.stButton > button { width: 100%; border-radius: 8px; font-weight: 600; height: 50px; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -56,81 +27,99 @@ def load_yolo():
     return YOLO('yolov8n.pt') 
 model = load_yolo()
 
+# --- NIGHT VISION ENGINE ---
+def apply_night_vision(img_array):
+    img_cv = cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR)
+    lab = cv2.cvtColor(img_cv, cv2.COLOR_BGR2LAB)
+    l, a, b = cv2.split(lab)
+    clahe = cv2.createCLAHE(clipLimit=4.0, tileGridSize=(8,8))
+    cl = clahe.apply(l)
+    enhanced_bgr = cv2.cvtColor(cv2.merge((cl,a,b)), cv2.COLOR_LAB2BGR)
+    pil_img = Image.fromarray(cv2.cvtColor(enhanced_bgr, cv2.COLOR_BGR2RGB))
+    return np.array(ImageEnhance.Brightness(pil_img).enhance(2.0))
+
+# --- SIDEBAR CONTROLS ---
+with st.sidebar:
+    st.markdown("## ⚙️ Vision Settings")
+    st.divider()
+    # NIGHT MODE DEFAULT ON
+    night_mode = st.toggle("🌙 Night Enhancement", value=True)
+    conf_level = st.slider("Confidence Threshold", 0.1, 1.0, 0.35)
+    st.divider()
+    st.info("System: YOLOv8 Engine Active")
+
 # --- HEADER ---
 st.markdown("<div class='main-title'>🔍 AI Object Detection Hub</div>", unsafe_allow_html=True)
 
-# --- NAVIGATION TOOLBAR ---
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    btn_snap = st.button("📸 Capture Snap")
-with col2:
-    # Browse logic: Standard file uploader but with minimal label
-    uploaded_file = st.file_uploader("📁 Browse Photo", type=['jpg', 'png', 'jpeg'], label_visibility="collapsed")
-with col3:
-    btn_live = st.button("🎥 Live Stream")
-
-# --- STATE LOGIC ---
-if 'mode' not in st.session_state: st.session_state.mode = None
-if btn_snap: st.session_state.mode = "Snap"
-if uploaded_file: st.session_state.mode = "Browse"
-if btn_live: st.session_state.mode = "Live"
+# --- NAVIGATION ---
+t1, t2, t3 = st.tabs(["📤 Upload Image", "📸 Take Snapshot", "🎥 Live Stream"])
 
 processed_img = None
 detected_boxes = []
 
-# --- ENGINES ---
-if st.session_state.mode == "Snap":
-    cam_img = st.camera_input("Take a photo")
-    if cam_img:
-        img = Image.open(cam_img)
-        res = model.predict(img, conf=0.3, imgsz=480)
+# --- TAB 1: UPLOAD ---
+with t1:
+    up = st.file_uploader("Choose a photo", type=['jpg', 'png', 'jpeg'], label_visibility="collapsed")
+    if up:
+        img_np = np.array(Image.open(up))
+        if night_mode: img_np = apply_night_vision(img_np)
+        res = model.predict(img_np, conf=conf_level, imgsz=640, verbose=False)
         processed_img, detected_boxes = res[0].plot(), res[0].boxes
 
-elif st.session_state.mode == "Browse" and uploaded_file:
-    img = Image.open(uploaded_file)
-    res = model.predict(img, conf=0.3, imgsz=480)
-    processed_img, detected_boxes = res[0].plot(), res[0].boxes
+# --- TAB 2: SNAPSHOT ---
+with t2:
+    cam = st.camera_input("Snapshot")
+    if cam:
+        img_np = np.array(Image.open(cam))
+        if night_mode: img_np = apply_night_vision(img_np)
+        res = model.predict(img_np, conf=conf_level, imgsz=640, verbose=False)
+        processed_img, detected_boxes = res[0].plot(), res[0].boxes
 
-elif st.session_state.mode == "Live":
+# --- TAB 3: LIVE STREAM ---
+with t3:
     st.markdown("<div class='card'>", unsafe_allow_html=True)
+    # Fast STUN servers for smooth connection
     RTC_CONFIG = RTCConfiguration({"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]})
     
     def video_frame_callback(frame):
         img = frame.to_ndarray(format="bgr24")
-        results = model.predict(img, conf=0.3, imgsz=320, verbose=False)
+        if night_mode:
+            # High-speed enhancement for Live
+            img = cv2.convertScaleAbs(img, alpha=1.5, beta=30)
+        
+        # Lower imgsz for higher FPS in live mode
+        results = model.predict(img, conf=conf_level, imgsz=320, verbose=False)
         return av.VideoFrame.from_ndarray(results[0].plot(), format="bgr24")
 
-    webrtc_streamer(key="yolo_live", video_frame_callback=video_frame_callback, 
-                    rtc_configuration=RTC_CONFIG,
-                    media_stream_constraints={"video": {"facingMode": "environment"}, "audio": False})
+    webrtc_streamer(
+        key="yolo_live_pro", 
+        video_frame_callback=video_frame_callback, 
+        rtc_configuration=RTC_CONFIG,
+        media_stream_constraints={"video": True, "audio": False},
+        async_processing=True # Isse lag kam hota hai
+    )
     st.markdown("</div>", unsafe_allow_html=True)
 
-# --- CONDITIONAL RESULTS (Sirf tab dikhega jab photo hogi) ---
+# --- RESULTS SECTION ---
 if processed_img is not None:
-    st.markdown("<div style='margin-top:20px;'></div>", unsafe_allow_html=True)
-    left, mid, right = st.columns([1, 2, 1])
+    st.divider()
+    left, right = st.columns([2, 1])
     
     with left:
         st.markdown("<div class='card'>", unsafe_allow_html=True)
-        st.write("### ⚙️ Settings")
-        conf = st.slider("Confidence", 0.1, 1.0, 0.35)
-        st.markdown("</div>", unsafe_allow_html=True)
-        
-    with mid:
-        st.markdown("<div class='card'>", unsafe_allow_html=True)
-        st.image(processed_img, use_container_width=True)
+        st.image(processed_img, use_container_width=True, caption="Detection Result")
         st.markdown("</div>", unsafe_allow_html=True)
         
     with right:
         st.markdown("<div class='card'>", unsafe_allow_html=True)
-        st.write("### 📋 Result")
-        table_data = []
+        st.write("### 📋 Detected Items")
+        items = []
         for box in detected_boxes:
             label = model.names[int(box.cls[0])]
-            table_data.append({"Object": label, "Conf": f"{round(float(box.conf[0])*100,1)}%"})
-        if table_data:
-            st.table(table_data)
+            items.append({"Object": label.capitalize(), "Score": f"{round(float(box.conf[0])*100,1)}%"})
+        
+        if items:
+            st.table(pd.DataFrame(items))
         else:
-            st.write("No items found.")
+            st.write("No objects detected.")
         st.markdown("</div>", unsafe_allow_html=True)
