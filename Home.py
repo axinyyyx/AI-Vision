@@ -27,14 +27,16 @@ st.markdown("""
     .feature-box:hover {
         transform: translateY(-10px);
         background: #25293d;
+        border-top: 4px solid #ffffff;
     }
     .logic-tag {
         background: rgba(0, 204, 102, 0.1);
         color: #00cc66;
         padding: 4px 10px;
         border-radius: 5px;
-        font-size: 12px;
+        font-size: 11px;
         font-weight: bold;
+        text-transform: uppercase;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -42,20 +44,17 @@ st.markdown("""
 # --- HERO SECTION ---
 st.markdown(f"""
     <div class='main-card'>
-        <h1 style='color: #00cc66; margin-bottom: 10px;'>👁️ A.I Vision</h1>
-        <p style='font-size: 20px; color: #bbb;'>Architected by <b style='color: white;'>Rishabh Kumar</b></p>
+        <h1 style='color: #00cc66; margin-bottom: 10px;'>A.I Vision</h1>
+        <p style='font-size: 20px; color: #bbb;'>Developed by <b style='color: white;'>Rishabh Kumar</b></p>
         <div style='margin-top: 15px;'>
-            <a href='https://instagram.com/rishabhsahill' target='_blank' style='color: #00cc66; text-decoration: none;'>📸 @rishabhsahill</a>
+            <a href='https://instagram.com/rishabhsahill' target='_blank' style='color: #00cc66; text-decoration: none;'>📸 Instagram</a> | 
+            <a href='https://rishabhsahil.in' style='color: white; text-decoration: none;'>🚀 Portfolio</a>
         </div>
-        <p style='margin-top: 20px; font-size: 16px; max-width: 800px; margin-left: auto; margin-right: auto;'>
-            Welcome to the future of Computer Vision. This hub integrates <b>YOLOv8</b> and <b>OpenCV</b> 
-            to solve real-world problems like high-speed tracking, precision measurement, and instant object recognition.
-        </p>
     </div>
     """, unsafe_allow_html=True)
 
-# --- FEATURES & LOGIC SECTION ---
-st.write("## 🛠️ Integrated Technologies")
+# --- FEATURES SECTION ---
+st.write("## 🛠️ Active Modules & Neural Logic")
 
 col1, col2, col3 = st.columns(3)
 
@@ -63,12 +62,10 @@ with col1:
     st.markdown("""
         <div class='feature-box'>
             <h3>📏 Precision Scale</h3>
-            <span class='logic-tag'>OPENCV + CONTOUR ANALYSIS</span>
-            <p style='color: #aaa; margin-top: 10px;'>
-                <b>How it works:</b><br>
-                1. <b>Canny Edge Detection:</b> Background se object ko alag karta hai.<br>
-                2. <b>Auto-Calibration:</b> Virtual reference point ke base par Pixels ko Centimeters mein convert karta hai.<br>
-                3. <b>Geometric Math:</b> Object ke bounding box ka Euclidean distance nikaal kar area calculate karta hai.
+            <span class='logic-tag'>OpenCV + Contour Analysis</span>
+            <p style='color: #aaa; margin-top: 10px; font-size: 14px;'>
+                <b>Logic:</b> Object boundaries detect karke pixels-to-metric ratio calculate karta hai.<br>
+                <b>Use Case:</b> Industrial part measurement.
             </p>
         </div>
         """, unsafe_allow_html=True)
@@ -76,13 +73,11 @@ with col1:
 with col2:
     st.markdown("""
         <div class='feature-box'>
-            <h3>🚦 Traffic AI Radar</h3>
-            <span class='logic-tag'>YOLOV8 + KALMAN FILTER</span>
-            <p style='color: #aaa; margin-top: 10px;'>
-                <b>How it works:</b><br>
-                1. <b>Object Tracking:</b> Har object ko ek unique ID di jati hai jo frame-to-frame follow hoti hai.<br>
-                2. <b>Velocity Vector:</b> Do frames ke beech ka distance aur time gap (dt) nikaal kar speed (km/h) calculate hoti hai.<br>
-                3. <b>Integration:</b> Speed ka change acceleration (a = dv/dt) ke roop mein dikhta hai.
+            <h3>🚦 Traffic Radar</h3>
+            <span class='logic-tag'>YOLOv8 + Kalman Tracking</span>
+            <p style='color: #aaa; margin-top: 10px; font-size: 14px;'>
+                <b>Logic:</b> Time-space displacement (dx/dt) se speed detect karta hai.<br>
+                <b>Use Case:</b> Speed violation detection.
             </p>
         </div>
         """, unsafe_allow_html=True)
@@ -91,19 +86,49 @@ with col3:
     st.markdown("""
         <div class='feature-box'>
             <h3>🔍 Neural Detection</h3>
-            <span class='logic-tag'>DEEP LEARNING (CNN)</span>
-            <p style='color: #aaa; margin-top: 10px;'>
+            <span class='logic-tag'>CNN + YOLOv8 Nano</span>
+            <p style='color: #aaa; margin-top: 10px; font-size: 14px;'>
+                <b>Logic:</b> COCO dataset par trained weights se 80+ objects classify karta hai.<br>
+                <b>Use Case:</b> General surveillance.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+
+# --- NEW MODULES ADDED ---
+st.write(" ") # Spacer
+col4, col5 = st.columns(2)
+
+with col4:
+    st.markdown("""
+        <div class='feature-box'>
+            <h3>🔢 Smart Counter</h3>
+            <span class='logic-tag'>Object Crossing + Line Logic</span>
+            <p style='color: #aaa; margin-top: 10px; font-size: 14px;'>
                 <b>How it works:</b><br>
-                1. <b>YOLOv8 Nano:</b> Ek light-weight neural network jo real-time mein objects ko classify karta hai.<br>
-                2. <b>Confidence Score:</b> Har object ke liye AI ek probability batata hai (0.0 to 1.0).<br>
-                3. <b>Live Stream:</b> WebRTC ka use karke camera stream ko server par process kiya jata hai.
+                1. <b>Region of Interest (ROI):</b> Frame par ek virtual line draw hoti hai.<br>
+                2. <b>Centroid Tracking:</b> Jab object ka center point line cross karta hai, counter <code>+1</code> ho jata hai.<br>
+                3. <b>Directional Logic:</b> In/Out movement ko alag-alag track karta hai.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+
+with col5:
+    st.markdown("""
+        <div class='feature-box'>
+            <h3>🎭 Persona DJ</h3>
+            <span class='logic-tag'>DeepFace + Sentiment Analysis</span>
+            <p style='color: #aaa; margin-top: 10px; font-size: 14px;'>
+                <b>How it works:</b><br>
+                1. <b>Biometric Extraction:</b> Face landmarks se Age, Gender aur Mood predict karta hai.<br>
+                2. <b>Safe-Search Filter:</b> Age ke base par content restrictions (Kids/Adult) apply karta hai.<br>
+                3. <b>YT-DLP API:</b> Mood ke according real-time music recommendations load karta hai.
             </p>
         </div>
         """, unsafe_allow_html=True)
 
 # --- SYSTEM ARCHITECTURE DIAGRAM ---
-
-
 st.write("---")
-# --- FOOTER ---
-st.info("👈 **Sidebar open karein aur feature select karein.** Har module live processing par chalta hai.")
+st.write("### 🏗️ Neural Pipeline Architecture")
+
+
+st.info("👈 **Sidebar open karein aur feature select karein.** Har module backend par Deep Learning models (Weights) use karta hai.")
