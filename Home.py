@@ -24,7 +24,6 @@ st.markdown("""
 
     /* 5. Pure page ko clean karne ke liye */
     #MainMenu {visibility: hidden;}
-    header {visibility: hidden;}
     </style>
     """, unsafe_allow_html=True)
 
@@ -162,6 +161,7 @@ st.write("### 🏗️ Neural Pipeline Architecture")
 
 
 st.info("👈 **Sidebar open karein aur feature select karein.** Har module backend par Deep Learning models (Weights) use karta hai.")
+
 
 
 
