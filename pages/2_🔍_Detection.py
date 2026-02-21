@@ -41,7 +41,6 @@ def apply_night_vision(img_array):
 
 # --- SIDEBAR CONTROLS ---
 with st.sidebar:
-    st.image("https://cdn-icons-png.flaticon.com/512/2586/2586149.png", width=80)
     st.markdown("## ⚙️ Accuracy Settings")
     st.divider()
     night_mode = st.toggle("🌙 Night Enhancement", value=True)
