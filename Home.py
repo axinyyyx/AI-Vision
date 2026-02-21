@@ -1,11 +1,23 @@
 import streamlit as st
 
-#  --- WATERMARK CONFIG ---
+#  --- REMOVE WATERMARK CONFIG ---
 st.markdown("""
     <style>
+    /* Sab kuch hide karne ke liye optimized CSS */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
+    
+    /* Ye specifically footer ke container ko target karta hai */
+    .stAppDeployButton {display:none !important;}
+    .st-emotion-cache-h5rgaw {display: none !important;}
+    .st-emotion-cache-zq5wmm {display: none !important;}
+    
+    /* Screen ke niche ka gap hatane ke liye */
+    footer:after {
+        content:'';
+        display:none !important;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -141,4 +153,5 @@ st.write("### 🏗️ Neural Pipeline Architecture")
 
 
 st.info("👈 **Sidebar open karein aur feature select karein.** Har module backend par Deep Learning models (Weights) use karta hai.")
+
 
