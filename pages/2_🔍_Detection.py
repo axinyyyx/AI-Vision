@@ -8,7 +8,7 @@ import av
 import pandas as pd
 
 # --- PAGE CONFIG ---
-st.set_page_config(page_title="AI Vision Hub Pro", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="AI Object Detection", layout="wide", initial_sidebar_state="expanded")
 
 # --- PREMIUM DARK UI ---
 st.markdown("""
@@ -49,7 +49,7 @@ with st.sidebar:
     st.info("System: YOLOv8 Engine Active")
 
 # --- HEADER ---
-st.markdown("<div class='main-title'>🔍 AI Object Detection Hub</div>", unsafe_allow_html=True)
+st.markdown("<div class='main-title'>🔍 AI Object Detection</div>", unsafe_allow_html=True)
 
 # --- NAVIGATION ---
 t1, t2, t3 = st.tabs(["📤 Upload Image", "📸 Take Snapshot", "🎥 Live Stream"])
