@@ -1,5 +1,14 @@
 import streamlit as st
 
+#  --- WATERMARK CONFIG ---
+st.markdown("""
+    <style>
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    </style>
+    """, unsafe_allow_html=True)
+
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="A.I Vision", page_icon="👁️", layout="wide")
 
@@ -132,3 +141,4 @@ st.write("### 🏗️ Neural Pipeline Architecture")
 
 
 st.info("👈 **Sidebar open karein aur feature select karein.** Har module backend par Deep Learning models (Weights) use karta hai.")
+
