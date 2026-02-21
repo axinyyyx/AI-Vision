@@ -8,7 +8,7 @@ import time
 from yt_dlp import YoutubeDL
 
 # --- PAGE CONFIG ---
-st.set_page_config(page_title="AI Mood Music & Movie Recommendations", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="AI Mood Based Music & Movie Recommendations", layout="wide", initial_sidebar_state="collapsed")
 
 # --- CUSTOM CSS FOR CLEAN UI ---
 st.markdown("""
