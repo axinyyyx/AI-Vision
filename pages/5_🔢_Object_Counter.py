@@ -2,18 +2,39 @@ import streamlit as st
 import cv2
 import numpy as np
 from ultralytics import YOLO
-from PIL import Image
+from PIL import Image, ImageEnhance
 import pandas as pd
 import time
 
-st.set_page_config(page_title="AI Object Counter", layout="wide")
+st.set_page_config(page_title="Object Counter", layout="wide")
 
-# --- APP HEADER ---
-st.title("🔢 Smart AI Object Counter")
-st.markdown("""
-**Description:** Yeh tool photo ya live camera se objects ko count karta hai aur unki list banata hai. 
-Aap ise inventory check karne ya crowd counting ke liye use kar sakte hain.
-""")
+# --- NIGHT VISION ENGINE ---
+def apply_night_vision(img):
+    # Convert PIL to OpenCV format
+    img_cv = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
+    
+    # 1. CLAHE (Contrast Limited Adaptive Histogram Equalization)
+    lab = cv2.cvtColor(img_cv, cv2.COLOR_BGR2LAB)
+    l, a, b = cv2.split(lab)
+    clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8,8))
+    cl = clahe.apply(l)
+    limg = cv2.merge((cl,a,b))
+    final_img = cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
+    
+    # 2. Brightness & Sharpness boost using PIL
+    enhanced_img = Image.fromarray(cv2.cvtColor(final_img, cv2.COLOR_BGR2RGB))
+    enhancer = ImageEnhance.Brightness(enhanced_img)
+    enhanced_img = enhancer.enhance(1.5) # Increase brightness by 50%
+    
+    return enhanced_img
+
+# --- APP UI ---
+st.title("🔢 Object Counter")
+st.sidebar.header("🌙 Vision Settings")
+night_mode = st.sidebar.toggle("Enable Night Vision Mode", value=False)
+
+if night_mode:
+    st.sidebar.info("Night Vision Active: Enhancing low-light visibility.")
 
 # Load Model
 @st.cache_resource
@@ -22,69 +43,57 @@ def load_yolo():
 
 model = load_yolo()
 
-# Session State for History
 if 'count_history' not in st.session_state:
     st.session_state.count_history = []
 
 def process_and_count(img):
+    # Apply Night Vision if toggled
+    if night_mode:
+        img = apply_night_vision(img)
+    
     img_arr = np.array(img)
     results = model(img_arr)
     
-    # Class wise counting logic
     counts = {}
     for box in results[0].boxes:
         label = model.names[int(box.cls[0])]
         counts[label] = counts.get(label, 0) + 1
     
-    # Prepare data for Table/Excel
-    current_time = time.strftime("%H:%M:%S")
     summary = []
+    current_time = time.strftime("%H:%M:%S")
     for obj, qty in counts.items():
-        data = {"Time": current_time, "Object Name": obj.capitalize(), "Quantity": qty}
+        data = {"Time": current_time, "Object": obj.capitalize(), "Count": qty, "Mode": "Night" if night_mode else "Day"}
         summary.append(data)
         st.session_state.count_history.append(data)
         
-    return results[0].plot(), summary
+    return results[0].plot(), summary, img
 
 # --- TABS ---
-t1, t2 = st.tabs(["🖼️ Image Upload", "📸 Live Snapshot Counter"])
+t1, t2 = st.tabs(["🖼️ Image Upload", "📸 Live Capture"])
 
 with t1:
-    up_file = st.file_uploader("Upload Image to Count", type=['jpg','png','jpeg'])
+    up_file = st.file_uploader("Upload Image", type=['jpg','png','jpeg'])
     if up_file:
-        img = Image.open(up_file)
-        annotated_img, summary_data = process_and_count(img)
+        img_raw = Image.open(up_file)
+        annotated_img, summary, processed_raw = process_and_count(img_raw)
         
-        col1, col2 = st.columns([2, 1])
-        with col1:
-            st.image(annotated_img, caption="Detection View")
-        with col2:
-            st.write("### 📊 Count Summary")
-            st.table(pd.DataFrame(summary_data))
+        c1, c2 = st.columns(2)
+        with c1:
+            st.image(processed_raw, caption="Enhanced Image (Night Vision)")
+        with c2:
+            st.image(annotated_img, caption="AI Detection")
+        st.table(pd.DataFrame(summary))
 
 with t2:
-    p = st.camera_input("Take a Photo to Count Objects")
+    p = st.camera_input("Snapshot")
     if p:
-        img = Image.open(p)
-        annotated_img, summary_data = process_and_count(img)
-        
-        col1, col2 = st.columns([2, 1])
-        with col1:
-            st.image(annotated_img)
-        with col2:
-            st.write("### 📊 Count Summary")
-            st.table(pd.DataFrame(summary_data))
+        img_raw = Image.open(p)
+        annotated_img, summary, processed_raw = process_and_count(img_raw)
+        st.image(annotated_img)
+        st.table(pd.DataFrame(summary))
 
-# --- MASTER EXCEL LOG ---
-st.divider()
-st.subheader("📋 Master Inventory Log (Excel Export)")
+# --- EXCEL LOG ---
 if st.session_state.count_history:
+    st.divider()
     df = pd.DataFrame(st.session_state.count_history)
-    st.dataframe(df, use_container_width=True)
-    
-    csv = df.to_csv(index=False).encode('utf-8')
-    st.download_button("📥 Download Counting Report", csv, "object_counts.csv", "text/csv")
-    
-    if st.button("Clear Log"):
-        st.session_state.count_history = []
-        st.rerun()
+    st.download_button("📥 Export Report", df.to_csv(index=False), "count_report.csv")
