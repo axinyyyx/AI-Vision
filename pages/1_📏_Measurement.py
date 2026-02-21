@@ -1,81 +1,126 @@
 import streamlit as st
 import cv2
 import numpy as np
+from ultralytics import YOLO
+from PIL import Image
+import math
+import pandas as pd
+import time
 
-# --- PAGE CONFIG ---
-st.set_page_config(page_title="AI Precision Scale", layout="wide")
+st.set_page_config(page_title="AI Precision Lab", layout="wide")
 
-st.markdown("<h2 style='text-align:center; color:#FF4B4B;'>📏 AI AUTO-SCALE MEASUREMENT</h2>", unsafe_allow_html=True)
+# --- USER GUIDE (Instructions) ---
+def show_instructions():
+    with st.expander("📖 Accuracy Guide: 90% + Results Kaise Paayein?", expanded=True):
+        st.markdown("""
+        ### ✅ Accurate Measurement ke liye Rules:
+        1. **ATM Card Reference:** Frame mein object ke bilkul bagal mein ek **ATM Card/Credit Card** rakhein. (AI ise scale ki tarah use karega).
+        2. **90-Degree Angle:** Camera ko hamesha object ke **theek upar (Top-View)** rakhein. Agar camera tedha hoga, toh measurement galat aayegi.
+        3. **Distance:** Card aur Object dono camera se **ek hi doori (Height)** par hone chahiye.
+        4. **Lighting:** Room mein achhi roshni honi chahiye taaki AI edges ko sahi se detect kare.
+        """)
 
-# --- SIDEBAR: ONE-TIME CALIBRATION ---
-st.sidebar.header("⚙️ Smart Calibration")
-# Agar screen par 100 pixels = 5cm hai, toh 1cm = 20px. 
-# Is slider se aap ek baar calibrate kar lo, fir card ki zarurat nahi padegi.
-calibration_factor = st.sidebar.slider("Fine Tune (Pixels per CM)", 10.0, 100.0, 37.8) 
+# --- MODEL LOAD ---
+@st.cache_resource
+def load_yolo():
+    return YOLO("yolov8n.pt")
 
-st.sidebar.info("💡 Tip: Ek baar scale rakh kar check karein ki ye sahi bata raha hai ya nahi, fir bina scale ke use karein.")
+model = load_yolo()
 
-img_file = st.camera_input("Object ki Photo lein")
-
-if img_file:
-    # Convert image
-    file_bytes = np.asarray(bytearray(img_file.read()), dtype=np.uint8)
-    img = cv2.imdecode(file_bytes, 1)
-    orig = img.copy()
-    h_img, w_img, _ = img.shape
-
-    # --- IMAGE PROCESSING ---
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    blur = cv2.GaussianBlur(gray, (7, 7), 0)
-    # Edge detection for precision
-    edged = cv2.Canny(blur, 50, 150)
-    edged = cv2.dilate(edged, None, iterations=1)
-    edged = cv2.erode(edged, None, iterations=1)
-
-    # Find Contours
-    cnts, _ = cv2.findContours(edged.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+# --- CALCULATION ENGINE ---
+def calculate_metrics(label, w_px, h_px, p2u, unit):
+    w, h = w_px * p2u, h_px * p2u
+    res = {
+        "ID": f"AI-{int(time.time() % 10000)}",
+        "Object": label.capitalize(),
+        f"Length ({unit})": round(w, 2),
+        f"Breadth ({unit})": round(h, 2),
+        f"Perimeter ({unit})": round(2*(w+h), 2),
+        f"Area ({unit}²)": round(w*h, 2)
+    }
     
-    # Filter small noise
-    objects = [c for c in cnts if cv2.contourArea(c) > 2000]
-
-    res_table = []
-
-    # --- AUTO REFERENCE OVERLAY (RED BOX) ---
-    # Hum ek imaginary card ka box draw karenge top corner mein reference ke liye
-    ref_w_px, ref_h_px = int(8.5 * calibration_factor), int(5.4 * calibration_factor)
-    cv2.rectangle(img, (20, 20), (20 + ref_w_px, 20 + ref_h_px), (0, 0, 255), 3)
-    cv2.putText(img, "AUTO-REF (8.5cm x 5.4cm)", (25, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-
-    for i, c in enumerate(objects):
-        # Calculate Bounding Box
-        rect = cv2.minAreaRect(c)
-        box = cv2.boxPoints(rect)
-        box = np.intp(box)
-        
-        # Dimensions in CM based on calibration_factor
-        (x, y), (w_px, h_px), angle = rect
-        width_cm = w_px / calibration_factor
-        height_cm = h_px / calibration_factor
-        
-        # Drawing
-        cv2.drawContours(img, [box], 0, (0, 255, 0), 4)
-        
-        # Labeling
-        cv2.putText(img, f"{round(width_cm, 1)}cm", (int(x), int(y)), 
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
-        
-        res_table.append({
-            "Object ID": f"Item {i+1}",
-            "Width (cm)": f"{round(width_cm, 2)} cm",
-            "Height (cm)": f"{round(height_cm, 2)} cm",
-            "Area": f"{round(width_cm * height_cm, 2)} cm²"
-        })
-
-    # --- FINAL DISPLAY ---
-    st.image(cv2.cvtColor(img, cv2.COLOR_BGR2RGB), use_container_width=True)
-    
-    if res_table:
-        st.subheader("📊 Measurement Results")
-        st.table(res_table)
+    # 3D/Shape Specific
+    if label in ['sports ball', 'orange', 'apple']:
+        r = w / 2
+        res[f"Radius ({unit})"] = round(r, 2)
+        res[f"Volume ({unit}³)"] = round((4/3)*math.pi*(r**3), 3)
+    elif label in ['bottle', 'cup']:
+        r = w / 2
+        res[f"Volume ({unit}³)"] = round(math.pi*(r**2)*h, 3)
     else:
-        st.warning("⚠️ Koi object detect nahi hua. Background saaf rakhein (Plain Background).")
+        res[f"Volume ({unit}³)"] = round(w*h*((w+h)/2), 3) # Est. Volume
+    return res
+
+# --- APP LAYOUT ---
+st.title("📏 Measurement Lab")
+show_instructions()
+
+unit_choice = st.sidebar.selectbox("Select Unit", ["cm", "m", "ft", "inch"])
+p2u_manual = st.sidebar.number_input("Manual Calibration (if no card)", value=0.0264, format="%.5f")
+
+if 'history' not in st.session_state:
+    st.session_state.history = []
+
+def process_frame(img):
+    img_arr = np.array(img)
+    results = model(img_arr)
+    
+    # Calibration Step
+    p2u = p2u_manual
+    found_ref = False
+    
+    # YOLO typically detects cards as 'book' or 'cell phone'
+    # We will use 'cell phone' as a standard 15cm x 7cm reference if found
+    for box in results[0].boxes:
+        if model.names[int(box.cls[0])] in ['cell phone', 'book']:
+            b = box.xyxy[0].cpu().numpy()
+            ref_px_w = b[2] - b[0]
+            # Standard Card Width = 8.56 cm
+            p2u = 8.56 / ref_px_w 
+            found_ref = True
+            break
+            
+    if found_ref: st.success("🎯 Reference Object Detected! Accuracy Optimized.")
+    else: st.warning("⚠️ No reference card found. Using manual calibration.")
+
+    # Unit Conversion
+    if unit_choice == "m": p2u /= 100
+    elif unit_choice == "ft": p2u /= 30.48
+    elif unit_choice == "inch": p2u /= 2.54
+
+    final_data = []
+    for i, box in enumerate(results[0].boxes):
+        label = model.names[int(box.cls[0])]
+        b = box.xyxy[0].cpu().numpy()
+        data = calculate_metrics(label, b[2]-b[0], b[3]-b[1], p2u, unit_choice)
+        final_data.append(data)
+        st.session_state.history.append(data)
+        
+    return results[0].plot(), final_data
+
+# --- TABS ---
+t1, t2 = st.tabs(["📤 Image Upload", "📸 Real-time Capture"])
+
+with t1:
+    f = st.file_uploader("Upload", type=['jpg','png','jpeg'])
+    if f:
+        img = Image.open(f)
+        annotated_img, data = process_frame(img)
+        st.image(annotated_img)
+        st.dataframe(pd.DataFrame(data))
+
+with t2:
+    p = st.camera_input("Take Photo (Keep ATM Card in frame)")
+    if p:
+        img = Image.open(p)
+        annotated_img, data = process_frame(img)
+        st.image(annotated_img)
+        st.dataframe(pd.DataFrame(data))
+
+# --- EXCEL EXPORT ---
+if st.session_state.history:
+    st.divider()
+    st.subheader("📊 Session History (Excel)")
+    df = pd.DataFrame(st.session_state.history)
+    st.dataframe(df)
+    st.download_button("📥 Download Excel Sheet", df.to_csv(index=False), "measurements.csv", "text/csv")
